@@ -31,10 +31,23 @@
 -A INPUT -i eth0 -p tcp -m state --state ESTABLISHED --sport 443 -j ACCEPT
 -A OUTPUT -o eth0 -p tcp -m state --state NEW,ESTABLISHED --dport 443 -j ACCEPT
 
-# Anti DOS
--A INPUT -p tcp -m tcp --dport 2142 -m connlimit --connlimit-above 40 --connlimit-mask 20 --connlimit-saddr -j DROP
--A INPUT -p tcp -m tcp --dport 443 -m connlimit --connlimit-above 40 --connlimit-mask 20 --connlimit-saddr -j DROP
--A INPUT -p tcp -m tcp --dport 80 -m connlimit --connlimit-above 40 --connlimit-mask 20 --connlimit-saddr -j DROP
+# Against DOS
+-A INPUT -i eth0 -p tcp -m tcp --dport 22 -m connlimit --connlimit-above 40 --connlimit-mask 20 --connlimit-saddr -j DROP
+-A INPUT -i eth0 -p tcp -m tcp --dport 443 -m connlimit --connlimit-above 40 --connlimit-mask 20 --connlimit-saddr -j DROP
+-A INPUT -i eth0 -p tcp -m tcp --dport 80 -m connlimit --connlimit-above 40 --connlimit-mask 20 --connlimit-saddr -j DROP
+
+# Against scanning
+-A INPUT -i eth0 -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG FIN,SYN,RST,ACK,URG -j SCANNING
+-A INPUT -i eth0 -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG FIN,SYN,PSH,URG -j SCANNING
+-A INPUT -i eth0 -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG FIN,PSH,URG -j SCANNING
+-A INPUT -i eth0 -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG NONE -j SCANNING
+-A INPUT -i eth0 -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG FIN,SYN,RST,PSH,ACK,URG -j SCANNING
+-A INPUT -i eth0 -p tcp -m tcp --tcp-flags SYN,RST SYN,RST -j SCANNING
+-A INPUT -i eth0 -p tcp -m tcp --tcp-flags FIN,SYN FIN,SYN -j SCANNING
+-A INPUT -i eth0 -p tcp -m tcp --tcp-flags FIN,RST FIN,RST -j SCANNING
+-A INPUT -i eth0 -p tcp -m tcp --tcp-flags ACK,URG URG -j SCANNING
+-A INPUT -i eth0 -p tcp -m tcp --tcp-flags PSH,ACK PSH -j SCANNING
+-A INPUT -i eth0 -p tcp -m tcp --tcp-flags FIN,ACK FIN -j SCANNING
 
 # Allow traffic on the TUN interface.
 -A INPUT -i tun0 -j ACCEPT
@@ -52,6 +65,7 @@
 -A OUTPUT -m limit --limit 3/min -j LOG --log-prefix "iptables_OUTPUT_denied: " --log-level 4
 
 # then reject them.
+-A SCANNING -j DROP
 -A INPUT -j REJECT
 -A FORWARD -j REJECT
 -A OUTPUT -j REJECT
